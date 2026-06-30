@@ -1,5 +1,7 @@
-description = "Scan the codebase for deprecated SDK API patterns — removed methods, old model names, pre-v1 client styles"
-prompt = """
+---
+description: Scan the codebase for deprecated SDK API patterns — removed methods, old model names, pre-v1 client styles
+---
+
 Scan the current working directory for deprecated SDK API patterns. One-shot report, change nothing.
 
 Check for these patterns across all source files (*.ts, *.tsx, *.js, *.jsx, *.py, *.mjs):
@@ -43,4 +45,3 @@ Output format:
 net: N deprecated patterns found across N files.
 
 If nothing found: "No deprecated SDK patterns detected. Good shape."
-"""

@@ -1,5 +1,7 @@
-description = "Scan the whole codebase for SDK imports and report coverage gaps vs the airblander watchlist"
-prompt = """
+---
+description: Scan the whole codebase for SDK imports and report coverage gaps vs the airblander watchlist
+---
+
 Scan the current working directory for SDK imports and cross-reference with the airblander watchlist. One-shot report, change nothing.
 
 Steps:
@@ -25,4 +27,3 @@ Output format:
 net: N watched SDKs, N in use, N gaps to add
 
 If all in-use SDKs are cleared and no gaps: "All SDK imports covered and cleared. Ship it."
-"""

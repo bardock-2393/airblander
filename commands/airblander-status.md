@@ -1,5 +1,7 @@
-description = "Show which SDKs are cleared (docs fetched) and which are still blocked this session"
-prompt = """
+---
+description: Show which SDKs are cleared (docs fetched) and which are still blocked this session
+---
+
 Read the file at $CLAUDE_CONFIG_DIR/airblander-state.json (fall back to ~/.claude/airblander-state.json if the env var is unset). Also read the airblander watchlist from the CLAUDE_PLUGIN_ROOT/config/watchlist.json.
 
 Display a status table — two sections:
@@ -11,4 +13,3 @@ BLOCKED (fetch docs first):
   For each SDK in the watchlist that is NOT in the cleared map, show the SDK name and the doc URL and Context7 query to run.
 
 If the state file doesn't exist, all SDKs are blocked. One-shot display only — do not modify any files.
-"""

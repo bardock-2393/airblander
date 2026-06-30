@@ -1,5 +1,7 @@
-description = "Add a new SDK to the airblander watchlist. Usage: /airblander-add <sdk-name> <docs-url>"
-prompt = """
+---
+description: Add a new SDK to the airblander watchlist. Usage: /airblander-add <sdk-name> <docs-url>
+---
+
 The user invoked /airblander-add with arguments. Extract the sdk-name and docs-url from their input (the text after the command name).
 
 Run this exact Bash command, substituting the extracted values:
@@ -14,4 +16,3 @@ After a successful add, tell the user:
 - The new SDK is now active for both prompt-time detection (resolve.js) and write-time detection (detect.js)
 - If they want to add clarification questions for this SDK, they can edit config/clarifications.json
 - No session restart is needed — the watchlist is read fresh on every hook invocation
-"""

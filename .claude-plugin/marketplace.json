@@ -1,9 +1,9 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "airblander-local",
-  "description": "Local airblander development marketplace",
+  "name": "airblander",
+  "description": "airblander marketplace",
   "owner": {
-    "name": "deepsantoshwar"
+    "name": "bardock-2393"
   },
   "plugins": [
     {

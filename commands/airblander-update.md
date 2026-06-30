@@ -1,5 +1,7 @@
-description = "Re-fetch docs for an SDK and refresh its cleared state. Usage: /airblander-update <sdk-name>"
-prompt = """
+---
+description: Re-fetch docs for an SDK and refresh its cleared state. Usage: /airblander-update <sdk-name>
+---
+
 The user invoked /airblander-update with an SDK name. Extract the SDK name from their input.
 
 Steps:
@@ -21,4 +23,3 @@ Steps:
 8. Report: "✓ <sdk> docs refreshed and cleared for this session."
 
 This is the manual equivalent of the automatic clear that happens after WebFetch via the PostToolUse hook.
-"""

@@ -1,5 +1,7 @@
-description = "Quick reference for all airblander commands and how the doc-gate enforcement works"
-prompt = """
+---
+description: Quick reference for all airblander commands and how the doc-gate enforcement works
+---
+
 Show the airblander quick reference card. One-shot, change nothing.
 
 Display:
@@ -29,4 +31,3 @@ twilio · pipecat · livekit · google-genai · aws-bedrock · anthropic · azur
 
 Add more: /airblander-add <sdk> <docs-url>
 State resets every session. /airblander-status shows the current snapshot.
-"""
