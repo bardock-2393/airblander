@@ -1,0 +1,15 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "airblander-local",
+  "description": "Local airblander development marketplace",
+  "owner": {
+    "name": "deepsantoshwar"
+  },
+  "plugins": [
+    {
+      "name": "airblander",
+      "description": "Blocks file writes that use fast-moving SDKs until current docs have been fetched this session.",
+      "source": "."
+    }
+  ]
+}
