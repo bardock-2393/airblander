@@ -1,3 +1,6 @@
+<p align="center">
+  <img src="logo.png" alt="Airblander Logo" width="350">
+</p>
 
 <h1 align="center">Airblander</h1>
 <p align="center">
