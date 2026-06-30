@@ -7,27 +7,24 @@ Show the airblander quick reference card. One-shot, change nothing.
 Display:
 
 ## What airblander does
-Blocks file writes that use fast-moving SDKs until current docs have been fetched this session. Prevents code written against stale API knowledge.
+Blocks file writes that import fast-moving SDKs until their current docs have been
+fetched this session. Prevents code written against stale API knowledge.
 
 ## Commands
 | Command | What it does |
 |---|---|
+| /airblander-scan | Scan this project's dependencies and build its SDK watchlist |
 | /airblander | Toggle enforcement on/off for this session |
-| /airblander-add <sdk> <docs-url> | Add a new SDK to the watchlist |
 | /airblander-status | Show cleared vs blocked SDKs this session |
-| /airblander-watchlist | List all tracked SDKs with keywords and import patterns |
-| /airblander-review | Scan the whole codebase for SDK imports and coverage gaps |
-| /airblander-deprecated | Detect deprecated API patterns across the codebase |
-| /airblander-update <sdk> | Re-fetch docs for an SDK and refresh its cleared state |
 | /airblander-help | This card |
 
-## How the gate works
-1. Prompt-time (resolve.js): Detects SDK keywords in your message, marks them as pending.
-2. Write-time (detect.js): Blocks Write/Edit/MultiEdit if the file imports a pending SDK.
-3. Cleared (clear.js): A WebFetch or Context7 fetch marks the SDK as safe for the session.
+## How it works
+1. `/airblander-scan` scans package.json / requirements.txt / go.mod, keeps the
+   recognized service SDKs, and writes `.airblander/watchlist.json`. No init = no gating.
+2. Write-time (detect.js): blocks Write/Edit/MultiEdit if the file imports a watched,
+   not-yet-cleared SDK.
+3. Cleared (clear.js): a successful WebFetch or Context7 docs fetch marks that SDK safe
+   for the rest of the session.
 
-## Built-in watched SDKs
-twilio · pipecat · livekit · google-genai · aws-bedrock · anthropic · azure-communication · stripe · openai
-
-Add more: /airblander-add <sdk> <docs-url>
-State resets every session. /airblander-status shows the current snapshot.
+State resets every session and is per-session, so projects don't interfere.
+/airblander-status shows the current snapshot.

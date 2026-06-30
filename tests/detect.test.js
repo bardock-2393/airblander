@@ -2,12 +2,14 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { spawnSync } = require('child_process');
-const { mkdtempSync, writeFileSync, mkdirSync } = require('fs');
+const { mkdtempSync, writeFileSync } = require('fs');
 const { join } = require('path');
 const { tmpdir } = require('os');
+const { makeProject } = require('./fixture');
 
 const PLUGIN_ROOT = join(__dirname, '..');
 const HOOK = join(PLUGIN_ROOT, 'hooks', 'detect.js');
+const PROJECT = makeProject(['twilio', 'stripe']); // initialized project watchlist
 
 function run(payload, state) {
   const configDir = mkdtempSync(join(tmpdir(), 'ab-detect-'));
@@ -15,7 +17,7 @@ function run(payload, state) {
     writeFileSync(join(configDir, 'airblander-state.json'), JSON.stringify(state));
   }
   return spawnSync(process.execPath, [HOOK], {
-    input: JSON.stringify(payload),
+    input: JSON.stringify({ cwd: PROJECT, ...payload }),
     encoding: 'utf8',
     env: { ...process.env, CLAUDE_CONFIG_DIR: configDir, CLAUDE_PLUGIN_ROOT: PLUGIN_ROOT },
   });
@@ -54,12 +56,25 @@ test('passes non-SDK content', () => {
   assert.equal(r.stdout, '');
 });
 
+test('no gating when project has no watchlist (not initialized)', () => {
+  const configDir = mkdtempSync(join(tmpdir(), 'ab-detect-'));
+  const r = spawnSync(process.execPath, [HOOK], {
+    input: JSON.stringify({
+      cwd: mkdtempSync(join(tmpdir(), 'ab-uninit-')),
+      tool_name: 'Write',
+      tool_input: { file_path: 'index.js', content: "import twilio from 'twilio'" },
+    }),
+    encoding: 'utf8',
+    env: { ...process.env, CLAUDE_CONFIG_DIR: configDir, CLAUDE_PLUGIN_ROOT: PLUGIN_ROOT },
+  });
+  assert.equal(r.status, 0);
+});
+
 test('ignores Bash tool (bypass path)', () => {
   const r = run({
     tool_name: 'Bash',
     tool_input: { command: "echo \"import twilio from 'twilio'\" > index.js" },
   });
-  // ponytail: this is a known gap — Bash writes bypass the hook
   assert.equal(r.status, 0);
 });
 
@@ -84,23 +99,6 @@ test('checks MultiEdit tool edits array', () => {
   assert.match(r.stdout, /stripe/i);
 });
 
-test('blocks dynamic SDK from state', () => {
-  const r = run(
-    { tool_name: 'Write', tool_input: { file_path: 'index.js', content: "import resend from 'resend'" } },
-    {
-      enabled: true,
-      cleared: {},
-      scoped: {
-        pending: ['resend'],
-        dynamicSDKs: [{ name: 'resend', domainHint: 'resend', displayName: 'Resend' }],
-        clarifications: {},
-      },
-    },
-  );
-  assert.equal(r.status, 2);
-  assert.match(r.stdout, /Resend/i);
-});
-
 test('blocks multiple SDKs in one write', () => {
   const r = run({
     tool_name: 'Write',
@@ -120,7 +118,6 @@ test('blocks an edit whose diff has no import but the file on disk imports the S
   const dir = mkdtempSync(join(tmpdir(), 'ab-edit-'));
   const file = join(dir, 'app.js');
   writeFileSync(file, "import twilio from 'twilio'\n\nfunction send(to) {\n  return to.trim()\n}\n");
-  // The diff fragment itself is innocent — no import line — but the file uses twilio.
   const r = run({
     tool_name: 'Edit',
     tool_input: { file_path: file, old_string: 'return to.trim()', new_string: 'return to.trim().toLowerCase()' },
@@ -147,5 +144,5 @@ test('passes malformed stdin gracefully', () => {
     encoding: 'utf8',
     env: { ...process.env, CLAUDE_CONFIG_DIR: configDir, CLAUDE_PLUGIN_ROOT: PLUGIN_ROOT },
   });
-  assert.equal(r.status, 0); // fail-open on parse error
+  assert.equal(r.status, 0);
 });

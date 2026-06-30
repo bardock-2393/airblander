@@ -5,11 +5,13 @@ const { spawnSync } = require('child_process');
 const { mkdtempSync, writeFileSync, readFileSync } = require('fs');
 const { join } = require('path');
 const { tmpdir } = require('os');
+const { makeProject } = require('./fixture');
 
 const PLUGIN_ROOT = join(__dirname, '..');
 const HOOK = join(PLUGIN_ROOT, 'hooks', 'clear.js');
+const PROJECT = makeProject(['twilio', 'stripe']);
 
-const BLANK_STATE = { enabled: true, cleared: {}, scoped: { pending: [], dynamicSDKs: [], clarifications: {} } };
+const BLANK_STATE = { enabled: true, cleared: {} };
 
 function run(payload, state = BLANK_STATE) {
   const configDir = mkdtempSync(join(tmpdir(), 'ab-clear-'));
@@ -17,7 +19,7 @@ function run(payload, state = BLANK_STATE) {
   writeFileSync(stateFile, JSON.stringify(state));
 
   const result = spawnSync(process.execPath, [HOOK], {
-    input: JSON.stringify(payload),
+    input: JSON.stringify({ cwd: PROJECT, ...payload }),
     encoding: 'utf8',
     env: { ...process.env, CLAUDE_CONFIG_DIR: configDir, CLAUDE_PLUGIN_ROOT: PLUGIN_ROOT },
   });
@@ -61,20 +63,13 @@ test('clears stripe on matching WebFetch URL', () => {
   assert.ok(newState?.cleared?.stripe);
 });
 
-test('clears dynamic SDK on domainHint URL match', () => {
-  const { newState } = run(
-    { tool_name: 'WebFetch', tool_input: { url: 'https://resend.com/docs/api-reference' } },
-    {
-      enabled: true,
-      cleared: {},
-      scoped: {
-        pending: ['resend'],
-        dynamicSDKs: [{ name: 'resend', domainHint: 'resend', displayName: 'Resend' }],
-        clarifications: {},
-      },
-    },
-  );
-  assert.ok(newState?.cleared?.resend);
+test('does not clear an SDK not in this project watchlist', () => {
+  // openai isn't in PROJECT (only twilio+stripe) -> fetching its docs clears nothing
+  const { newState } = run({
+    tool_name: 'WebFetch',
+    tool_input: { url: 'https://platform.openai.com/docs' },
+  });
+  assert.ok(!newState?.cleared?.openai);
 });
 
 test('does not overwrite already-cleared timestamp', () => {
@@ -82,7 +77,6 @@ test('does not overwrite already-cleared timestamp', () => {
     { tool_name: 'WebFetch', tool_input: { url: 'https://www.twilio.com/docs' } },
     { enabled: true, cleared: { twilio: 1000 } },
   );
-  // already cleared — skip condition means we don't touch it
   assert.equal(newState?.cleared?.twilio, 1000);
 });
 

@@ -1,15 +1,14 @@
 #!/usr/bin/env node
-// airblander PostToolUse — marks an SDK as docs-cleared when a matching fetch succeeds
+// airblander PostToolUse -- marks a watched SDK as docs-cleared when a matching
+// docs fetch (WebFetch or Context7) succeeds. Watchlist is per-project.
 'use strict';
 
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
+const { stateFile } = require('./state-path');
+const { loadWatchlist } = require('./watchlist');
 
-const PLUGIN_ROOT = process.env.CLAUDE_PLUGIN_ROOT || path.join(__dirname, '..');
-const CONFIG_DIR = process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
-const STATE_FILE = path.join(CONFIG_DIR, 'airblander-state.json');
-const WATCHLIST_FILE = path.join(PLUGIN_ROOT, 'config', 'watchlist.json');
+let STATE_FILE = stateFile(null);
 
 function readState() {
   try { return JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')); }
@@ -21,28 +20,19 @@ function writeState(state) {
   fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
 }
 
-let raw;
-try { raw = fs.readFileSync(0, 'utf8'); }
-catch { process.exit(0); }
-
 let input;
-try { input = JSON.parse(raw); }
+try { input = JSON.parse(fs.readFileSync(0, 'utf8')); }
 catch { process.exit(0); }
 
-let watchlist;
-try { watchlist = JSON.parse(fs.readFileSync(WATCHLIST_FILE, 'utf8')); }
-catch { process.exit(0); }
+STATE_FILE = stateFile(input.session_id);
+const watchlist = loadWatchlist(input.cwd);
+if (watchlist.sdks.length === 0) process.exit(0);
 
 const { tool_name, tool_input, tool_response } = input;
 const isWebFetch = tool_name === 'WebFetch';
 
-function escapeRegex(s) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 // A fetch only clears docs if it actually succeeded. A 404/DNS-fail/empty body
-// must NOT unblock writes (the old "WebFetch a 404 clears it" hole).
-// ponytail: no tool_response (e.g. context7) → can't judge, don't veto.
+// must NOT unblock writes. No tool_response (e.g. context7) -> can't judge, don't veto.
 function fetchFailed(resp) {
   if (resp == null) return false;
   const s = typeof resp === 'string' ? resp : JSON.stringify(resp);
@@ -57,60 +47,35 @@ if (isWebFetch) {
   url = tool_input.url || '';
   if (!url) process.exit(0);
   if (fetchFailed(tool_response)) {
-    process.stdout.write('airblander: fetch looked unsuccessful — not clearing. Re-fetch the canonical docs URL.');
+    process.stdout.write('airblander: fetch looked unsuccessful -- not clearing. Re-fetch the canonical docs URL.');
     process.exit(0);
   }
 } else {
-  // mcp__context7__* — stringify all input values for pattern matching
-  slugTarget = Object.values(tool_input || {})
-    .filter(v => typeof v === 'string')
-    .join(' ');
+  slugTarget = Object.values(tool_input || {}).filter(v => typeof v === 'string').join(' ');
   if (!slugTarget) process.exit(0);
 }
 
-// For WebFetch, only canonical domain patterns count (entries with a dot, e.g.
-// "twilio\.com") — a blog/SO page with "twilio" in the path no longer clears.
-// For context7, a name/slug match is legitimate: you resolved that library by id.
-function matchesStatic(sdk) {
+// WebFetch: only canonical domain patterns (with a dot) count. context7: name/slug match.
+function matches(sdk) {
   if (isWebFetch) {
     return sdk.docsDomains.filter(d => d.includes('.')).some(d => new RegExp(d, 'i').test(url));
   }
   return sdk.docsDomains.some(d => new RegExp(d, 'i').test(slugTarget));
 }
 
-function matchesDynamic(dSdk) {
-  const hint = escapeRegex(dSdk.domainHint);
-  // WebFetch: hint must be a domain label (resend.com), not any path substring.
-  if (isWebFetch) return new RegExp(hint + '\\.', 'i').test(url);
-  return new RegExp(hint, 'i').test(slugTarget);
-}
-
 const state = readState();
 const newlyCleared = [];
-
-// v1: check static watchlist SDKs
 for (const sdk of watchlist.sdks) {
   if (state.cleared?.[sdk.name]) continue;
-  if (matchesStatic(sdk)) {
+  if (matches(sdk)) {
     if (!state.cleared) state.cleared = {};
     state.cleared[sdk.name] = Date.now();
     newlyCleared.push(sdk.name);
   }
 }
 
-// v2: check dynamic SDKs from resolve.js prompt-time scan
-const dynamicSDKs = state.scoped?.dynamicSDKs || [];
-for (const dSdk of dynamicSDKs) {
-  if (state.cleared?.[dSdk.name]) continue;
-  if (matchesDynamic(dSdk)) {
-    if (!state.cleared) state.cleared = {};
-    state.cleared[dSdk.name] = Date.now();
-    newlyCleared.push(dSdk.displayName || dSdk.name);
-  }
-}
-
 if (newlyCleared.length > 0) {
   writeState(state);
-  process.stdout.write(`airblander: ✓ ${newlyCleared.join(', ')} cleared — writes unblocked`);
+  process.stdout.write(`airblander: ${newlyCleared.join(', ')} cleared -- writes unblocked`);
 }
 process.exit(0);

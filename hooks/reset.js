@@ -4,10 +4,14 @@
 
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
+const { stateFile, cleanupOldStates } = require('./state-path');
 
-const CONFIG_DIR = process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
-const STATE_FILE = path.join(CONFIG_DIR, 'airblander-state.json');
+// SessionStart gets session_id on stdin; key state to it so projects/sessions don't collide
+let sessionId;
+try { sessionId = JSON.parse(fs.readFileSync(0, 'utf8')).session_id; } catch {}
+const STATE_FILE = stateFile(sessionId);
+
+cleanupOldStates();
 
 try {
   fs.mkdirSync(path.dirname(STATE_FILE), { recursive: true });
@@ -16,7 +20,6 @@ try {
   fs.writeFileSync(STATE_FILE, JSON.stringify({
     enabled: prev.enabled !== false, // preserve explicit off; default to true
     cleared: {},
-    scoped: { pending: [], dynamicSDKs: [], clarifications: {} },
   }, null, 2));
 } catch {}
 

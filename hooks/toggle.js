@@ -4,10 +4,10 @@
 
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
+const { stateFile } = require('./state-path');
 
-const CONFIG_DIR = process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
-const STATE_FILE = path.join(CONFIG_DIR, 'airblander-state.json');
+// session id passed by resolve.js as argv[2] so we hit the same per-session file
+const STATE_FILE = stateFile(process.argv[2]);
 
 function readState() {
   try { return JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')); }
