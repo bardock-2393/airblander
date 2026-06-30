@@ -69,14 +69,11 @@ SDKs not in the watchlist are still caught. "Integrate Resend for email" gets fl
 
 ## Install
 
-```
-/plugin marketplace add bardock-2393/airblander
-```
-```
-/plugin install airblander@airblander
+```bash
+claude plugin install bardock-2393/airblander
 ```
 
-Two separate prompts.
+Run that once in your terminal. Done.
 
 ## Commands
 
