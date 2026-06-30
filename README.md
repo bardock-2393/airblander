@@ -14,19 +14,15 @@
 
 ---
 
-You've been there. You ask an AI agent to integrate Stripe. It writes two hundred lines against the v2 Charges API. You ship it. Six months later, that API is gone. The docs were right there.
+You've been there. You ask an AI agent to add Stripe. It writes two hundred lines against the v2 Charges API — confidently, quickly, correctly according to its training data from eighteen months ago. You ship it. Everything works until it doesn't.
 
-Airblander closes the loop. Before your agent writes a single import, it fetches the current docs. No fetch, no write.
+Airblander is a Claude Code plugin that blocks the agent from writing SDK code until it has actually fetched the current docs this session. Not docs from yesterday. Not docs it vaguely remembers. Docs it fetched ten seconds ago.
 
-## Before / after
+## What it looks like
 
-You ask the agent to add Twilio SMS. Without airblander it starts typing:
+You say: "add Twilio SMS to this endpoint."
 
-```python
-from twilio.rest import Client
-client = Client(account_sid, auth_token)
-client.messages.create(body="Hello", from_="+1...", to="+1...")
-```
+Without airblander, the agent starts writing immediately. Maybe it gets `RestClient` (removed in v4). Maybe it doesn't. Depends on the day.
 
 With airblander:
 
@@ -40,18 +36,18 @@ Fetch current docs before writing SDK code:
 After fetching, re-attempt the write.
 ```
 
-Agent fetches the docs, finds the current API, writes correct code. Every time.
+The agent fetches the docs, finds out what's current, and then writes the file. One extra step, consistently correct code.
 
 ## How it works
 
-Three hooks, one state file, one watchlist:
+Three hooks, one state file:
 
 ```
 You type: "add stripe payments"
         ↓
-  resolve.js  →  spots "stripe" in your message, marks it pending
+  resolve.js  →  sees "stripe" in your message, marks it pending
         ↓
-  Agent tries to write payment.ts  (import stripe)
+  Agent tries to write payment.ts  (import stripe ...)
         ↓
   detect.js   →  stripe not cleared  →  BLOCKED (exit 2)
         ↓
@@ -59,18 +55,16 @@ You type: "add stripe payments"
         ↓
   clear.js    →  stripe marked cleared ✓
         ↓
-  Agent writes the file  →  allowed ✅
+  Agent writes the file  →  allowed
 ```
 
-**Session-scoped.** State resets on every session start. Docs fetched yesterday don't count — the library may have changed.
+State resets every session. Docs fetched yesterday don't count — the library may have changed overnight.
 
-**Dynamic detection.** SDKs not in the watchlist are still caught via tech-signal extraction. "integrate Resend for emails" is flagged even though Resend isn't a built-in entry — and you get a prompt to add it.
+SDKs not in the watchlist are still caught. "Integrate Resend for email" gets flagged as an unknown service and the agent is told to resolve its docs before writing. You can add it permanently with `/airblander-add`.
 
-**Toggle.** `/airblander` pauses enforcement for the session. Run it again to re-enable.
+`/airblander` pauses enforcement for the session if you need to work fast. Run it again to re-enable.
 
 ## Install
-
-### Claude Code
 
 ```
 /plugin marketplace add bardock-2393/airblander
@@ -79,7 +73,7 @@ You type: "add stripe payments"
 /plugin install airblander@airblander
 ```
 
-Send as two separate prompts.
+Two separate prompts.
 
 ## Commands
 
@@ -87,44 +81,34 @@ Send as two separate prompts.
 |---|---|
 | `/airblander` | Toggle enforcement on/off for this session |
 | `/airblander-add <sdk> <docs-url>` | Add a new SDK to the watchlist |
-| `/airblander-status` | Show which SDKs are cleared and which are still blocked this session |
-| `/airblander-watchlist` | List all tracked SDKs with keywords, import patterns, and doc URLs |
-| `/airblander-review` | Scan the whole codebase for SDK imports and report coverage gaps |
+| `/airblander-status` | Show which SDKs are cleared this session |
+| `/airblander-watchlist` | List all tracked SDKs |
+| `/airblander-review` | Scan your codebase for SDK imports and report coverage gaps |
 | `/airblander-deprecated` | Detect deprecated API patterns across the codebase |
-| `/airblander-update <sdk>` | Re-fetch docs for an SDK and refresh its cleared state |
-| `/airblander-help` | Quick reference for the commands above |
+| `/airblander-update <sdk>` | Re-fetch docs for an SDK mid-session |
+| `/airblander-help` | Quick reference |
 
-## Watched SDKs (built-in)
+## Watched SDKs
 
-| SDK | Keywords | Deprecated patterns tracked |
+| SDK | Keywords | Deprecated patterns caught |
 |---|---|---|
 | **anthropic** | claude, anthropic, claude api | `completions.create`, `claude-instant-*`, `claude-2`, `claude-v1` |
 | **openai** | openai, openai api | `ChatCompletion.create`, `Completion.create`, `text-davinci-003` |
 | **stripe** | stripe, stripe api | `charges.create`, `sources.create`, `orders.create` |
 | **twilio** | twilio, twilio sms, twilio voice | `Twilio.RestClient(` |
 | **google-genai** | gemini, google genai | `chat-bison`, `text-bison`, `gemini-pro` (1.0), `generateText` |
-| **aws-bedrock** | aws bedrock, bedrock, invoke model | `anthropic.claude-v2`, `claude-instant`, `titan-text-express` |
+| **aws-bedrock** | aws bedrock, bedrock | `anthropic.claude-v2`, `claude-instant`, `titan-text-express` |
 | **livekit** | livekit, livekit-agents | `RoomServiceClient(` |
 | **pipecat** | pipecat, pipecat-ai | — |
 | **azure-communication** | azure communication, acs sms | `@azure/communication-sms` (going multi-channel) |
 
-Add more with `/airblander-add`. The watchlist lives at `config/watchlist.json`.
-
-## Detecting deprecated patterns
-
-`/airblander-deprecated` scans your codebase against the `deprecated` field in every watchlist entry and reports what to fix:
+`/airblander-deprecated` scans your whole codebase against these patterns and tells you what to fix:
 
 ```
-## Deprecated API Report
-
 ### anthropic
   src/llm.py:3  client.completions.create(model="claude-instant-1.2", ...)
     → Replace with: client.messages.create()
     → Reason: Text Completions API deprecated; Messages API is the current standard
-
-  src/llm.py:3  "claude-instant-1.2"
-    → Replace with: claude-haiku-4-5
-    → Reason: claude-instant models retired Jan 2025
 
 ### stripe
   src/pay.js:2  stripe.charges.create({ amount: 2000 })
@@ -134,30 +118,56 @@ Add more with `/airblander-add`. The watchlist lives at `config/watchlist.json`.
 net: 3 deprecated patterns found across 2 files.
 ```
 
-## Adding a new SDK
+## Adding an SDK
 
 ```
 /airblander-add resend https://resend.com/docs
 ```
 
-That's it. The new SDK is active immediately — no session restart needed. To add clarification questions (e.g. "which Resend feature?"), edit `config/clarifications.json`.
+That's it. Active immediately, no restart. To add clarification questions (e.g. "which Resend product?"), edit `config/clarifications.json`.
 
-## FAQ
+## Testing
+
+Unit tests for all three hooks, no API calls needed:
+
+```bash
+node --test tests/detect.test.js tests/clear.test.js tests/resolve.test.js
+```
+
+28 tests covering: blocked/cleared/disabled states, Edit and MultiEdit tools, dynamic SDK detection, toggle behavior, and malformed-input resilience.
+
+## Benchmarks
+
+The benchmark script measures whether airblander actually reduces deprecated-API usage, not just whether it blocks writes. It runs each task twice — once without hooks (baseline arm) and once with airblander active — and checks the output files for known deprecated patterns from the watchlist.
+
+```bash
+# dry run — shows what would run, no API calls
+node benchmarks/run.js --dry-run
+
+# full benchmark, n=4 runs per task
+node benchmarks/run.js --runs=4 --model=claude-sonnet-4-6
+
+# single task
+node benchmarks/run.js --tasks=twilio-sms --runs=2
+```
+
+Results land in `benchmarks/results/<date>-results.md`.
+
+**Known limitation**: The benchmark (and the plugin) only covers `Write`, `Edit`, and `MultiEdit` tool calls. If the agent writes code via `Bash` (e.g. `cat > file.js`), the hook doesn't fire. That's a real gap and it's documented in the results.
+
+## A few questions people ask
 
 **Does it slow the agent down?**
-One `node` process at prompt time, one at write time. Both finish in under 100ms. You won't notice.
+One Node process at prompt time, one before each write. Both finish in under 100ms.
 
-**What if I'm working offline?**
-Toggle it off with `/airblander`, work, toggle back on. The state file persists the toggle.
+**What if I'm offline?**
+Toggle off with `/airblander`, work, toggle back. The toggle persists across that session.
 
-**What if the SDK isn't in the watchlist?**
-Tech-signal extraction catches it anyway — "integrate Resend for email" gets flagged as an unknown service and the agent is told to resolve its docs before writing. Add it permanently with `/airblander-add`.
+**Why reset every session?**
+Because a fetch from last week is stale by now. Per-session is the only contract that actually means something.
 
-**Why does it reset every session?**
-SDK docs change. A fetch from last week may already be stale. Per-session is the only guarantee that means something.
-
-**Can I keep a SDK permanently cleared?**
-Not by design. Fetch the docs; it takes five seconds. That's the contract.
+**Can I permanently clear an SDK?**
+No. Fetch the docs. It takes five seconds.
 
 ## License
 
