@@ -1,0 +1,224 @@
+{
+  "sdks": [
+    {
+      "name": "twilio",
+      "keywords": [
+        "twilio",
+        "twilio.rest",
+        "twilio sms",
+        "twilio voice",
+        "twilio video"
+      ],
+      "patterns": [
+        "import\\s+[\"']?twilio",
+        "from\\s+[\"']?twilio",
+        "require\\s*\\([\"']twilio"
+      ],
+      "docsUrl": "https://www.twilio.com/docs",
+      "docsDomains": [
+        "twilio\\.com",
+        "\\/twilio\\/",
+        "twilio"
+      ],
+      "context7Query": "twilio"
+    },
+    {
+      "name": "pipecat",
+      "keywords": [
+        "pipecat",
+        "pipecat-ai",
+        "pipecat pipeline",
+        "pipecat agent"
+      ],
+      "patterns": [
+        "import\\s+[\"']?pipecat",
+        "from\\s+[\"']?pipecat",
+        "require\\s*\\([\"']pipecat"
+      ],
+      "docsUrl": "https://docs.pipecat.ai",
+      "docsDomains": [
+        "pipecat\\.ai",
+        "\\/pipecat\\/",
+        "pipecat"
+      ],
+      "context7Query": "pipecat"
+    },
+    {
+      "name": "livekit",
+      "keywords": [
+        "livekit",
+        "livekit-agents",
+        "livekit agent",
+        "livekit room",
+        "livekit sip"
+      ],
+      "patterns": [
+        "import\\s+[\"']?livekit",
+        "from\\s+[\"']?livekit",
+        "require\\s*\\([\"']livekit"
+      ],
+      "docsUrl": "https://docs.livekit.io",
+      "docsDomains": [
+        "livekit\\.io",
+        "\\/livekit\\/",
+        "livekit"
+      ],
+      "context7Query": "livekit"
+    },
+    {
+      "name": "google-genai",
+      "keywords": [
+        "gemini",
+        "google genai",
+        "google generative ai",
+        "gemini live",
+        "gemini api",
+        "gemini flash",
+        "gemini pro",
+        "@google/generative-ai",
+        "google.generativeai",
+        "generative-ai"
+      ],
+      "patterns": [
+        "import\\s+[\"']?@google/generative-ai",
+        "from\\s+[\"']?@google/generative-ai",
+        "require\\s*\\([\"']@google/generative-ai",
+        "import\\s+google\\.generativeai",
+        "from\\s+google\\.generativeai"
+      ],
+      "docsUrl": "https://ai.google.dev/api/live",
+      "docsDomains": [
+        "ai\\.google\\.dev",
+        "generativeai\\.google\\.com",
+        "generative-ai",
+        "google.*generativeai",
+        "generativeai"
+      ],
+      "context7Query": "google generative-ai"
+    },
+    {
+      "name": "aws-bedrock",
+      "keywords": [
+        "aws bedrock",
+        "amazon bedrock",
+        "bedrock",
+        "bedrock api",
+        "invoke model",
+        "bedrock runtime",
+        "converse api"
+      ],
+      "patterns": [
+        "import\\s+boto3",
+        "from\\s+boto3",
+        "require\\s*\\([\"']@aws-sdk/client-bedrock",
+        "import\\s+[\"']?@aws-sdk/client-bedrock",
+        "from\\s+[\"']?@aws-sdk/client-bedrock",
+        "bedrock-runtime",
+        "BedrockRuntime"
+      ],
+      "docsUrl": "https://docs.aws.amazon.com/bedrock/latest/APIReference/",
+      "docsDomains": [
+        "docs\\.aws\\.amazon\\.com.*bedrock",
+        "aws\\.amazon\\.com.*bedrock",
+        "\\/bedrock\\/",
+        "bedrock"
+      ],
+      "context7Query": "aws-sdk-js-v3 bedrock"
+    },
+    {
+      "name": "anthropic",
+      "keywords": [
+        "claude",
+        "claude api",
+        "anthropic",
+        "anthropic sdk",
+        "claude sonnet",
+        "claude opus",
+        "claude haiku",
+        "claude 3",
+        "claude 4",
+        "claude model"
+      ],
+      "patterns": [
+        "import\\s+anthropic",
+        "from\\s+anthropic",
+        "require\\s*\\([\"']anthropic",
+        "import\\s+[\"']?@anthropic-ai",
+        "from\\s+[\"']?@anthropic-ai",
+        "require\\s*\\([\"']@anthropic-ai"
+      ],
+      "docsUrl": "https://docs.anthropic.com/en/api/",
+      "docsDomains": [
+        "docs\\.anthropic\\.com",
+        "\\/anthropic\\/",
+        "anthropic"
+      ],
+      "context7Query": "anthropic"
+    },
+    {
+      "name": "azure-communication",
+      "keywords": [
+        "azure communication",
+        "azure communication services",
+        "acs sms",
+        "acs calling",
+        "azure sms",
+        "@azure/communication"
+      ],
+      "patterns": [
+        "import\\s+[\"']?@azure/communication",
+        "from\\s+[\"']?@azure/communication",
+        "require\\s*\\([\"']@azure/communication",
+        "from\\s+azure\\.communication",
+        "import\\s+azure\\.communication"
+      ],
+      "docsUrl": "https://learn.microsoft.com/en-us/azure/communication-services",
+      "docsDomains": [
+        "learn\\.microsoft\\.com.*communication",
+        "azure.*communication",
+        "communication-services"
+      ],
+      "context7Query": "azure communication services"
+    },
+    {
+      "name": "stripe",
+      "keywords": [
+        "stripe",
+        "stripe api",
+        "stripe sdk"
+      ],
+      "patterns": [
+        "import\\s+[\"']?stripe",
+        "from\\s+[\"']?stripe",
+        "require\\s*\\([\"']stripe"
+      ],
+      "docsUrl": "https://stripe.com/docs",
+      "docsDomains": [
+        "stripe\\.com",
+        "\\/stripe\\/",
+        "stripe"
+      ],
+      "context7Query": "stripe"
+    },
+    {
+      "name": "openai",
+      "keywords": [
+        "openai",
+        "openai api",
+        "openai sdk"
+      ],
+      "patterns": [
+        "import\\s+[\"']?openai",
+        "from\\s+[\"']?openai",
+        "require\\s*\\([\"']openai"
+      ],
+      "docsUrl": "https://platform.openai.com/docs",
+      "docsDomains": [
+        "platform\\.openai\\.com",
+        "\\/openai\\/",
+        "openai"
+      ],
+      "context7Query": "openai"
+    }
+  ]
+}

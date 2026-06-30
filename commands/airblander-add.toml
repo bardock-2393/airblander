@@ -1,0 +1,17 @@
+description = "Add a new SDK to the airblander watchlist. Usage: /airblander-add <sdk-name> <docs-url>"
+prompt = """
+The user invoked /airblander-add with arguments. Extract the sdk-name and docs-url from their input (the text after the command name).
+
+Run this exact Bash command, substituting the extracted values:
+
+  node "${CLAUDE_PLUGIN_ROOT}/hooks/add-sdk.js" <sdk-name> <docs-url>
+
+If the user also provided a third argument (an import name that differs from the sdk-name, e.g. for scoped packages like @scope/pkg), pass it as a third argument.
+
+Report the output of the script verbatim. If the script errors, show the error and stop — do not attempt to edit watchlist.json manually.
+
+After a successful add, tell the user:
+- The new SDK is now active for both prompt-time detection (resolve.js) and write-time detection (detect.js)
+- If they want to add clarification questions for this SDK, they can edit config/clarifications.json
+- No session restart is needed — the watchlist is read fresh on every hook invocation
+"""

@@ -1,0 +1,90 @@
+{
+  "twilio": {
+    "questions": [
+      {
+        "id": "channel",
+        "q": "Which Twilio channel will you use?",
+        "options": ["SMS", "Voice", "Video", "Email (SendGrid)", "WhatsApp"]
+      }
+    ]
+  },
+  "pipecat": {
+    "questions": [
+      {
+        "id": "transport",
+        "q": "Which transport layer?",
+        "options": ["Daily WebRTC", "WebSocket", "Local (stdio)"]
+      },
+      {
+        "id": "llm",
+        "q": "Which LLM backend?",
+        "options": ["OpenAI", "Anthropic Claude", "Google Gemini", "Groq", "Other"]
+      }
+    ]
+  },
+  "livekit": {
+    "questions": [
+      {
+        "id": "usecase",
+        "q": "Which LiveKit use-case?",
+        "options": ["Voice agent", "Video room", "SIP/telephony", "Ingress/Egress"]
+      },
+      {
+        "id": "sdk",
+        "q": "Which LiveKit SDK?",
+        "options": ["Python (livekit-agents)", "JavaScript/TypeScript", "Go", "Swift/iOS", "Android/Kotlin"]
+      }
+    ]
+  },
+  "google-genai": {
+    "questions": [
+      {
+        "id": "model",
+        "q": "Which Gemini model?",
+        "options": ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-pro", "gemini-1.5-flash"]
+      },
+      {
+        "id": "modality",
+        "q": "Which modality?",
+        "options": ["Text only", "Multimodal (text + image)", "Live API (audio/video streaming)", "Code execution"]
+      }
+    ]
+  },
+  "aws-bedrock": {
+    "questions": [
+      {
+        "id": "model",
+        "q": "Which foundation model via Bedrock?",
+        "options": ["Claude (Anthropic)", "Llama (Meta)", "Titan (Amazon)", "Mistral", "Command (Cohere)"]
+      },
+      {
+        "id": "api",
+        "q": "Which Bedrock API pattern?",
+        "options": ["InvokeModel (single)", "Converse API (chat)", "InvokeModelWithResponseStream (streaming)", "Agents for Bedrock"]
+      }
+    ]
+  },
+  "anthropic": {
+    "questions": [
+      {
+        "id": "model",
+        "q": "Which Claude model?",
+        "options": ["claude-sonnet-4-6 (latest)", "claude-opus-4-8", "claude-haiku-4-5", "claude-3-5-sonnet-20241022"]
+      },
+      {
+        "id": "mode",
+        "q": "Which API mode?",
+        "options": ["Messages API (standard)", "Streaming", "Tool use / function calling", "Extended thinking", "Batch API"]
+      }
+    ]
+  },
+  "azure-communication": {
+    "questions": [
+      {
+        "id": "capability",
+        "q": "Which Azure Communication Services capability?",
+        "options": ["SMS", "Voice/PSTN calling", "Chat", "Email", "Teams interop"]
+      }
+    ]
+  }
+}
