@@ -116,6 +116,30 @@ test('passes empty content', () => {
   assert.equal(r.status, 0);
 });
 
+test('blocks an edit whose diff has no import but the file on disk imports the SDK (#3)', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'ab-edit-'));
+  const file = join(dir, 'app.js');
+  writeFileSync(file, "import twilio from 'twilio'\n\nfunction send(to) {\n  return to.trim()\n}\n");
+  // The diff fragment itself is innocent — no import line — but the file uses twilio.
+  const r = run({
+    tool_name: 'Edit',
+    tool_input: { file_path: file, old_string: 'return to.trim()', new_string: 'return to.trim().toLowerCase()' },
+  });
+  assert.equal(r.status, 2, 'editing a file that imports an uncleared SDK should be gated');
+  assert.match(r.stdout, /twilio/i);
+});
+
+test('still passes an edit to a non-SDK file (#3 regression)', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'ab-edit-'));
+  const file = join(dir, 'util.js');
+  writeFileSync(file, "export function add(a, b) {\n  return a + b\n}\n");
+  const r = run({
+    tool_name: 'Edit',
+    tool_input: { file_path: file, old_string: 'a + b', new_string: 'a + b + 0' },
+  });
+  assert.equal(r.status, 0);
+});
+
 test('passes malformed stdin gracefully', () => {
   const configDir = mkdtempSync(join(tmpdir(), 'ab-detect-'));
   const r = spawnSync(process.execPath, [HOOK], {

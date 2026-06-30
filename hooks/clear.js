@@ -33,28 +33,65 @@ let watchlist;
 try { watchlist = JSON.parse(fs.readFileSync(WATCHLIST_FILE, 'utf8')); }
 catch { process.exit(0); }
 
-const { tool_name, tool_input } = input;
+const { tool_name, tool_input, tool_response } = input;
+const isWebFetch = tool_name === 'WebFetch';
 
-// Build the target string: URL for WebFetch, all string values for context7 tools
-let target = '';
-if (tool_name === 'WebFetch') {
-  target = tool_input.url || '';
-} else {
-  // mcp__context7__* — stringify all input values for pattern matching
-  target = Object.values(tool_input || {})
-    .filter(v => typeof v === 'string')
-    .join(' ');
+function escapeRegex(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-if (!target) process.exit(0);
+// A fetch only clears docs if it actually succeeded. A 404/DNS-fail/empty body
+// must NOT unblock writes (the old "WebFetch a 404 clears it" hole).
+// ponytail: no tool_response (e.g. context7) → can't judge, don't veto.
+function fetchFailed(resp) {
+  if (resp == null) return false;
+  const s = typeof resp === 'string' ? resp : JSON.stringify(resp);
+  if (s.trim().length === 0) return true;
+  return /failed to fetch|could not (?:fetch|retrieve|resolve|load)|unable to (?:fetch|retrieve|access|load)|request failed|fetch failed|page not found|no results found|err_name_not_resolved|enotfound|getaddrinfo/i.test(s);
+}
+
+// WebFetch evidence is the URL; context7 evidence is the resolved library id/name.
+let url = '';
+let slugTarget = '';
+if (isWebFetch) {
+  url = tool_input.url || '';
+  if (!url) process.exit(0);
+  if (fetchFailed(tool_response)) {
+    process.stdout.write('airblander: fetch looked unsuccessful — not clearing. Re-fetch the canonical docs URL.');
+    process.exit(0);
+  }
+} else {
+  // mcp__context7__* — stringify all input values for pattern matching
+  slugTarget = Object.values(tool_input || {})
+    .filter(v => typeof v === 'string')
+    .join(' ');
+  if (!slugTarget) process.exit(0);
+}
+
+// For WebFetch, only canonical domain patterns count (entries with a dot, e.g.
+// "twilio\.com") — a blog/SO page with "twilio" in the path no longer clears.
+// For context7, a name/slug match is legitimate: you resolved that library by id.
+function matchesStatic(sdk) {
+  if (isWebFetch) {
+    return sdk.docsDomains.filter(d => d.includes('.')).some(d => new RegExp(d, 'i').test(url));
+  }
+  return sdk.docsDomains.some(d => new RegExp(d, 'i').test(slugTarget));
+}
+
+function matchesDynamic(dSdk) {
+  const hint = escapeRegex(dSdk.domainHint);
+  // WebFetch: hint must be a domain label (resend.com), not any path substring.
+  if (isWebFetch) return new RegExp(hint + '\\.', 'i').test(url);
+  return new RegExp(hint, 'i').test(slugTarget);
+}
 
 const state = readState();
 const newlyCleared = [];
 
-// v1: check static watchlist docsDomains
+// v1: check static watchlist SDKs
 for (const sdk of watchlist.sdks) {
   if (state.cleared?.[sdk.name]) continue;
-  if (sdk.docsDomains.some(d => new RegExp(d, 'i').test(target))) {
+  if (matchesStatic(sdk)) {
     if (!state.cleared) state.cleared = {};
     state.cleared[sdk.name] = Date.now();
     newlyCleared.push(sdk.name);
@@ -65,8 +102,7 @@ for (const sdk of watchlist.sdks) {
 const dynamicSDKs = state.scoped?.dynamicSDKs || [];
 for (const dSdk of dynamicSDKs) {
   if (state.cleared?.[dSdk.name]) continue;
-  // ponytail: simple substring match — the domainHint is the slug (e.g. "stripe")
-  if (new RegExp(dSdk.domainHint, 'i').test(target)) {
+  if (matchesDynamic(dSdk)) {
     if (!state.cleared) state.cleared = {};
     state.cleared[dSdk.name] = Date.now();
     newlyCleared.push(dSdk.displayName || dSdk.name);

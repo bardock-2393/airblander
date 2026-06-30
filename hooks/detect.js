@@ -26,6 +26,20 @@ function getNewContent(input) {
   return '';
 }
 
+// What we actually scan: the diff fragment PLUS the file already on disk for edits.
+// ponytail: an Edit that touches a function body in a file that already imports the
+// SDK never restates the import — diff-only scanning misses it. Reading the on-disk
+// file closes that bypass; falls back to fragment-only if it can't be read (new file,
+// relative path), preserving the original behaviour.
+function getScanContent(input) {
+  const { tool_name, tool_input } = input;
+  let content = getNewContent(input);
+  if ((tool_name === 'Edit' || tool_name === 'MultiEdit') && tool_input.file_path) {
+    try { content += '\n' + fs.readFileSync(tool_input.file_path, 'utf8'); } catch {}
+  }
+  return content;
+}
+
 function escapeRegex(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -48,10 +62,13 @@ let watchlist;
 try {
   watchlist = JSON.parse(fs.readFileSync(WATCHLIST_FILE, 'utf8'));
 } catch {
+  // ponytail: fail-open (never brick the user's writes) but LOUD, not silent — a
+  // broken watchlist that quietly stops enforcing is worse than a visible warning.
+  process.stdout.write('airblander: watchlist unreadable — SDK doc-gate is NOT enforcing this write. Check config/watchlist.json.');
   process.exit(0);
 }
 
-const content = getNewContent(input);
+const content = getScanContent(input);
 if (!content) process.exit(0);
 
 const state = readState();

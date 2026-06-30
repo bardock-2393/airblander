@@ -86,6 +86,32 @@ test('does not overwrite already-cleared timestamp', () => {
   assert.equal(newState?.cleared?.twilio, 1000);
 });
 
+test('does NOT clear when SDK name is only in the URL path, not the domain (#6)', () => {
+  const { newState } = run({
+    tool_name: 'WebFetch',
+    tool_input: { url: 'https://someblog.com/2024/twilio-tutorial-best-practices' },
+  });
+  assert.ok(!newState?.cleared?.twilio, 'a blog with twilio in the path must not clear twilio');
+});
+
+test('does NOT clear when the fetch failed, even on the canonical domain (#1)', () => {
+  const { newState } = run({
+    tool_name: 'WebFetch',
+    tool_input: { url: 'https://stripe.com/docs/api/payment_intents' },
+    tool_response: 'Failed to fetch the page: 404 Not Found',
+  });
+  assert.ok(!newState?.cleared?.stripe, 'a failed fetch must not clear stripe');
+});
+
+test('still clears on canonical domain when fetch succeeded (#1 regression)', () => {
+  const { newState } = run({
+    tool_name: 'WebFetch',
+    tool_input: { url: 'https://stripe.com/docs/api/payment_intents' },
+    tool_response: '# Stripe API Reference\nThe PaymentIntents API lets you ...(real docs body)...',
+  });
+  assert.ok(newState?.cleared?.stripe);
+});
+
 test('always exits 0', () => {
   const { result } = run({ tool_name: 'WebFetch', tool_input: { url: 'https://x.com' } });
   assert.equal(result.status, 0);
