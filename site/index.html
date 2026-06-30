@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Airblander — It won't let you write SDK code until you've read the docs.</title>
+    <meta
+      name="description"
+      content="A Claude Code plugin that blocks the agent from writing SDK code until it has fetched the current docs this session."
+    />
+    <meta property="og:title" content="Airblander" />
+    <meta
+      property="og:description"
+      content="It won't let you write SDK code until you've read the docs."
+    />
+    <link rel="icon" href="logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --background: oklch(1 0 0);
+        --foreground: oklch(0.141 0.005 285.823);
+        --primary: oklch(0.141 0.005 285.823);
+        --primary-foreground: oklch(0.985 0 0);
+        --secondary: oklch(0.967 0.001 286.375);
+        --muted: oklch(0.967 0.001 286.375);
+        --muted-foreground: oklch(0.442 0.017 285.786);
+        --destructive: oklch(0.577 0.245 27.325);
+        --card: oklch(1 0 0);
+        --border: oklch(0.92 0.004 286.32);
+        --ring: oklch(0.705 0.015 286.067);
+        --radius: 0.5rem;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        border-color: var(--border);
+      }
+
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+
+      body {
+        font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.9375rem; /* 15px */
+        line-height: 1.5;
+        background: var(--background);
+        color: var(--muted-foreground);
+        -webkit-font-smoothing: antialiased;
+        transition:
+          background 300ms,
+          color 300ms;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .container {
+        width: 100%;
+        max-width: 44rem; /* max-w-176 */
+        margin-inline: auto;
+        padding-inline: 1rem;
+      }
+      @media (min-width: 640px) {
+        .container {
+          padding-inline: 2rem;
+        }
+      }
+
+      /* ---- Header ---- */
+      header .container {
+        display: flex;
+        height: 4.5rem; /* h-18 */
+        align-items: center;
+        gap: 0.75rem;
+      }
+      .header-social {
+        margin-left: auto;
+        margin-right: -0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.125rem;
+      }
+      .header-social a {
+        display: inline-flex;
+        height: 2rem;
+        width: 2rem;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius);
+        color: var(--muted-foreground);
+        transition:
+          color 300ms,
+          background 300ms;
+      }
+      .header-social a:hover {
+        color: var(--foreground);
+        background: var(--muted);
+      }
+      .header-social svg {
+        height: 1.0625rem;
+        width: 1.0625rem;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+      }
+      .brand .mark-sm {
+        height: 1.625rem;
+        width: 1.625rem;
+        object-fit: cover;
+        border-radius: 0.25rem;
+        border: 1px solid var(--border);
+      }
+      .brand span {
+        font-size: 1.125rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        color: var(--foreground);
+        line-height: 1;
+        transform: translateY(1px);
+      }
+      main {
+        padding-top: 2rem;
+        padding-bottom: 3rem;
+      }
+      @media (min-width: 640px) {
+        main {
+          padding-top: 3rem;
+          padding-bottom: 4.5rem;
+        }
+      }
+
+      section + section {
+        margin-top: 3.5rem;
+      }
+
+      /* ---- Hero ---- */
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: var(--muted-foreground);
+        margin-bottom: 0.75rem;
+      }
+      .eyebrow::before {
+        content: '';
+        height: 0.5rem;
+        width: 0.5rem;
+        border-radius: 9999px;
+        background: var(--destructive);
+      }
+      h1 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--foreground);
+        line-height: 1.3;
+        margin-bottom: 1rem;
+      }
+      @media (min-width: 480px) {
+        h1 {
+          font-size: 1.5rem;
+        }
+      }
+      h1 .underline {
+        border-bottom: 0.09375rem solid var(--primary);
+      }
+      .lead {
+        color: var(--foreground);
+        line-height: 1.625;
+        text-wrap: pretty;
+        margin-bottom: 1.25rem;
+      }
+      .lead p + p {
+        margin-top: 0.75rem;
+      }
+
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+      .btn {
+        display: inline-flex;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        height: 2rem;
+        padding-inline: 0.625rem;
+        border-radius: 0.25rem;
+        border: 1px solid transparent;
+        font-size: 0.875rem;
+        font-weight: 500;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: all 300ms;
+      }
+      .btn svg {
+        height: 1rem;
+        width: 1rem;
+      }
+      .btn-default {
+        background: var(--primary);
+        color: var(--primary-foreground);
+      }
+      .btn-default:hover {
+        opacity: 0.9;
+      }
+      .btn-secondary {
+        background: var(--secondary);
+        color: var(--foreground);
+      }
+      .btn-secondary:hover {
+        opacity: 0.85;
+      }
+
+      /* ---- Section headers ---- */
+      .section-title {
+        font-size: 0.8125rem; /* 13px */
+        font-weight: 500;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--foreground);
+        margin-bottom: 1rem;
+      }
+      .section-intro {
+        margin-bottom: 1.25rem;
+        text-wrap: pretty;
+      }
+      p + p {
+        margin-top: 0.75rem;
+      }
+
+      /* ---- Code blocks ---- */
+      pre {
+        background: var(--muted);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 0.875rem 1rem;
+        font-size: 0.8125rem;
+        line-height: 1.65;
+        color: var(--foreground);
+        overflow-x: auto;
+        white-space: pre;
+      }
+      pre + pre {
+        margin-top: 0.75rem;
+      }
+      code {
+        font-family: inherit;
+      }
+      .inline-code {
+        background: var(--muted);
+        border: 1px solid var(--border);
+        border-radius: 0.25rem;
+        padding: 0.05rem 0.3rem;
+        font-size: 0.85em;
+        color: var(--foreground);
+      }
+      pre .bad {
+        color: var(--destructive);
+        font-weight: 500;
+      }
+      pre .good {
+        color: oklch(0.62 0.17 145);
+        font-weight: 500;
+      }
+      pre .dim {
+        color: var(--muted-foreground);
+      }
+
+      /* ---- Cards ---- */
+      .cards {
+        display: grid;
+        gap: 0.75rem;
+        grid-template-columns: 1fr;
+      }
+      @media (min-width: 640px) {
+        .cards {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+      .card {
+        display: flex;
+        flex-direction: column;
+        gap: 0.375rem;
+        padding: 0.75rem;
+        font-size: 0.875rem;
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        background: var(--card);
+        transition: box-shadow 300ms;
+      }
+      .card:hover {
+        box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 15%, transparent);
+      }
+      .card-title {
+        font-weight: 500;
+        font-size: 1rem;
+        color: var(--foreground);
+      }
+      .card-content {
+        line-height: 1.625;
+        color: var(--muted-foreground);
+      }
+
+      /* ---- Table ---- */
+      .table-wrap {
+        overflow-x: auto;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.875rem;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 0.625rem 0.875rem;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+      tr:last-child td {
+        border-bottom: 0;
+      }
+      th {
+        font-weight: 500;
+        color: var(--foreground);
+        font-size: 0.8125rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+      td code,
+      th code {
+        color: var(--foreground);
+      }
+      td strong {
+        color: var(--foreground);
+        font-weight: 600;
+      }
+
+      /* ---- FAQ ---- */
+      .faq-item + .faq-item {
+        margin-top: 1.25rem;
+      }
+      .faq-q {
+        color: var(--foreground);
+        font-weight: 500;
+        margin-bottom: 0.25rem;
+      }
+
+      /* ---- Footer ---- */
+      footer .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        border-top: 1px solid var(--border);
+        padding-block: 1.5rem;
+        font-size: 0.8125rem;
+        color: var(--muted-foreground);
+      }
+      @media (min-width: 640px) {
+        footer .container {
+          flex-direction: row;
+        }
+      }
+      .heart {
+        color: var(--destructive);
+        display: inline-block;
+      }
+
+      .links {
+        display: flex;
+        gap: 1.25rem;
+      }
+      .links a {
+        color: var(--muted-foreground);
+        transition: color 300ms;
+      }
+      .links a:hover {
+        color: var(--foreground);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <a class="brand" href="#" aria-label="Airblander home">
+          <img class="mark-sm" src="logo.png" alt="Airblander logo" />
+          <span>airblander</span>
+        </a>
+        <nav class="header-social">
+          <a href="https://x.com/SantoshwarDeep" target="_blank" rel="noreferrer" aria-label="Deep on X">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path
+                d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.66l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
+              />
+            </svg>
+          </a>
+          <a
+            href="https://www.linkedin.com/in/deep-santoshwar/"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Deep on LinkedIn"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path
+                d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"
+              />
+            </svg>
+          </a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container">
+      <!-- Hero -->
+      <section class="hero">
+        <span class="eyebrow">Claude Code plugin</span>
+        <h1>
+          Your agent writes SDK code from memory. That memory is
+          <span class="underline">eighteen months old</span>.
+        </h1>
+        <div class="lead">
+          <p>
+            Airblander blocks the write until the agent has fetched today's docs — every session,
+            before a single line. Not docs from yesterday. Not docs it vaguely remembers. Docs it
+            pulled ten seconds ago.
+          </p>
+        </div>
+        <div class="actions">
+          <a
+            class="btn btn-default"
+            href="https://github.com/bardock-2393/airblander"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path
+                d="M12 .5C5.37.5 0 5.78 0 12.29c0 5.2 3.44 9.6 8.21 11.16.6.11.82-.25.82-.57 0-.28-.01-1.02-.02-2-3.34.71-4.04-1.58-4.04-1.58-.55-1.36-1.33-1.73-1.33-1.73-1.09-.73.08-.72.08-.72 1.2.08 1.84 1.21 1.84 1.21 1.07 1.8 2.81 1.28 3.5.98.11-.76.42-1.28.76-1.57-2.67-.3-5.47-1.3-5.47-5.79 0-1.28.47-2.33 1.23-3.15-.12-.3-.53-1.5.12-3.13 0 0 1-.32 3.3 1.2a11.6 11.6 0 0 1 6 0c2.29-1.52 3.29-1.2 3.29-1.2.65 1.63.24 2.83.12 3.13.77.82 1.23 1.87 1.23 3.15 0 4.5-2.81 5.49-5.49 5.78.43.37.81 1.1.81 2.22 0 1.6-.01 2.89-.01 3.28 0 .32.21.69.82.57A12.04 12.04 0 0 0 24 12.29C24 5.78 18.63.5 12 .5z"
+              />
+            </svg>
+            View on GitHub
+          </a>
+          <a class="btn btn-secondary" href="#install">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 3v12M7 10l5 5 5-5M5 21h14" />
+            </svg>
+            Install
+          </a>
+        </div>
+      </section>
+
+      <!-- The whole idea -->
+      <section>
+        <h2 class="section-title">The whole idea</h2>
+        <p class="section-intro">
+          Same prompt — "add Stripe payments." The only thing that changes is whether the agent
+          looked things up first.
+        </p>
+        <pre><code><span class="bad">✗  from memory      </span>stripe.charges.create({ amount: 2000, currency: "usd" })
+<span class="dim">                     // Charges API — no 3-D Secure, no SCA. Ships, then fails in the EU.</span>
+
+<span class="good">✓  after reading docs</span> stripe.paymentIntents.create({ amount: 2000, currency: "usd" })
+<span class="dim">                     // current. handles 3DS/SCA. the thing you actually wanted.</span></code></pre>
+        <p>
+          The model isn't wrong on purpose. It's confidently repeating an API that was current when
+          it was trained. Airblander makes it check before it writes — so you get the second line,
+          not the first.
+        </p>
+      </section>
+
+      <!-- What it looks like -->
+      <section>
+        <h2 class="section-title">What you actually see</h2>
+        <p class="section-intro">
+          You say <strong style="color: var(--foreground)">"add Twilio SMS to this endpoint."</strong>
+          Instead of guessing at <code class="inline-code">RestClient</code> (gone in v4), the agent
+          hits a wall:
+        </p>
+        <pre><code>airblander: BLOCKED — docs not yet fetched for: twilio
+
+Fetch current docs before writing SDK code:
+  • twilio: fetch https://www.twilio.com/docs
+    or use Context7 query: "twilio"
+
+After fetching, re-attempt the write.</code></pre>
+        <p>
+          It fetches the docs, learns what's current, and writes the file. One extra step you never
+          have to ask for — and consistently correct code on the other side.
+        </p>
+      </section>
+
+      <!-- How it works -->
+      <section>
+        <h2 class="section-title">How it works</h2>
+        <p class="section-intro">
+          No model, no magic — three small hooks and one state file. Reading your prompt, gating the
+          write, clearing the SDK once docs are in.
+        </p>
+        <pre><code>You type: "add stripe payments"
+        ↓
+  resolve.js  →  sees "stripe" in your message, marks it pending
+        ↓
+  Agent tries to write payment.ts  (import stripe ...)
+        ↓
+  detect.js   →  stripe not cleared  →  BLOCKED (exit 2)
+        ↓
+  Agent fetches stripe.com/docs
+        ↓
+  clear.js    →  stripe marked cleared ✓
+        ↓
+  Agent writes the file  →  allowed</code></pre>
+        <p>
+          State resets every session. Docs fetched yesterday don't count — the library may have
+          changed overnight. SDKs not in the watchlist are still caught, and you can add them
+          permanently with <code class="inline-code">/airblander-add</code>.
+        </p>
+      </section>
+
+      <!-- Install -->
+      <section id="install">
+        <h2 class="section-title">Install</h2>
+        <p class="section-intro">Two commands in your terminal. Done.</p>
+        <pre><code>claude plugin marketplace add bardock-2393/airblander
+claude plugin install airblander@airblander</code></pre>
+      </section>
+
+      <!-- Commands -->
+      <section>
+        <h2 class="section-title">Commands</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Command</th>
+                <th>What it does</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>/airblander</code></td>
+                <td>Toggle enforcement on/off for this session</td>
+              </tr>
+              <tr>
+                <td><code>/airblander-add &lt;sdk&gt; &lt;url&gt;</code></td>
+                <td>Add a new SDK to the watchlist</td>
+              </tr>
+              <tr>
+                <td><code>/airblander-status</code></td>
+                <td>Show which SDKs are cleared this session</td>
+              </tr>
+              <tr>
+                <td><code>/airblander-watchlist</code></td>
+                <td>List all tracked SDKs</td>
+              </tr>
+              <tr>
+                <td><code>/airblander-review</code></td>
+                <td>Scan your codebase for SDK imports and report coverage gaps</td>
+              </tr>
+              <tr>
+                <td><code>/airblander-deprecated</code></td>
+                <td>Detect deprecated API patterns across the codebase</td>
+              </tr>
+              <tr>
+                <td><code>/airblander-update &lt;sdk&gt;</code></td>
+                <td>Re-fetch docs for an SDK mid-session</td>
+              </tr>
+              <tr>
+                <td><code>/airblander-help</code></td>
+                <td>Quick reference</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Watched SDKs -->
+      <section>
+        <h2 class="section-title">Watched SDKs &middot; 9</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>SDK</th>
+                <th>Keywords</th>
+                <th>Deprecated patterns caught</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>anthropic</strong></td>
+                <td>claude, anthropic, claude api</td>
+                <td>
+                  <code>completions.create</code>, <code>claude-2</code>, <code>claude-v1</code>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>openai</strong></td>
+                <td>openai, openai api</td>
+                <td><code>ChatCompletion.create</code>, <code>text-davinci-003</code></td>
+              </tr>
+              <tr>
+                <td><strong>stripe</strong></td>
+                <td>stripe, stripe api</td>
+                <td><code>charges.create</code>, <code>sources.create</code></td>
+              </tr>
+              <tr>
+                <td><strong>twilio</strong></td>
+                <td>twilio, twilio sms, twilio voice</td>
+                <td><code>Twilio.RestClient(</code></td>
+              </tr>
+              <tr>
+                <td><strong>google-genai</strong></td>
+                <td>gemini, google genai</td>
+                <td><code>chat-bison</code>, <code>gemini-pro</code> (1.0)</td>
+              </tr>
+              <tr>
+                <td><strong>aws-bedrock</strong></td>
+                <td>aws bedrock, bedrock</td>
+                <td><code>anthropic.claude-v2</code>, <code>claude-instant</code></td>
+              </tr>
+              <tr>
+                <td><strong>livekit</strong></td>
+                <td>livekit, livekit-agents</td>
+                <td><code>RoomServiceClient(</code></td>
+              </tr>
+              <tr>
+                <td><strong>pipecat</strong></td>
+                <td>pipecat, pipecat-ai</td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <td><strong>azure-communication</strong></td>
+                <td>azure communication, acs sms</td>
+                <td><code>@azure/communication-sms</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- FAQ -->
+      <section>
+        <h2 class="section-title">A few questions people ask</h2>
+        <div class="faq-item">
+          <p class="faq-q">Does it slow the agent down?</p>
+          <p>One Node process at prompt time, one before each write. Both finish in under 100ms.</p>
+        </div>
+        <div class="faq-item">
+          <p class="faq-q">What if I'm offline?</p>
+          <p>
+            Toggle off with <code class="inline-code">/airblander</code>, work, toggle back. The
+            toggle persists across that session.
+          </p>
+        </div>
+        <div class="faq-item">
+          <p class="faq-q">Why reset every session?</p>
+          <p>
+            Because a fetch from last week is stale by now. Per-session is the only contract that
+            actually means something.
+          </p>
+        </div>
+        <div class="faq-item">
+          <p class="faq-q">Can I permanently clear an SDK?</p>
+          <p>No. Fetch the docs. It takes five seconds.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="container">
+        <p>&copy; <span id="year"></span> Built with <span class="heart">&hearts;</span> by Deep</p>
+        <span class="links">
+          <a href="https://github.com/bardock-2393/airblander" target="_blank" rel="noreferrer"
+            >GitHub</a
+          >
+          <a href="https://deepsantoshwar.com" target="_blank" rel="noreferrer"
+            >deepsantoshwar.com</a
+          >
+        </span>
+      </div>
+    </footer>
+
+    <script>
+      document.getElementById('year').textContent = new Date().getFullYear()
+    </script>
+  </body>
+</html>
