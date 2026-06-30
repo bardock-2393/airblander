@@ -11,8 +11,10 @@ const STATE_FILE = path.join(CONFIG_DIR, 'airblander-state.json');
 
 try {
   fs.mkdirSync(path.dirname(STATE_FILE), { recursive: true });
+  let prev = {};
+  try { prev = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')); } catch {}
   fs.writeFileSync(STATE_FILE, JSON.stringify({
-    enabled: true,
+    enabled: prev.enabled !== false, // preserve explicit off; default to true
     cleared: {},
     scoped: { pending: [], dynamicSDKs: [], clarifications: {} },
   }, null, 2));

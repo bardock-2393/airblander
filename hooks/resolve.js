@@ -24,6 +24,14 @@ const STOP_WORDS = new Set([
   'code','file','app','api','sdk','service','library','function','class','module',
   'what','how','when','where','why','which','who','need','want','like','help',
   'please','using','based','simple','quick','basic','full','real','live',
+  // common English nouns that precede "SDK/API" in natural speech but are never package names
+  'improvement','suggestion','list','result','update','example','version','feature',
+  'support','method','option','approach','type','test','check','error','fix','issue',
+  'problem','change','difference','format','output','input','response','request',
+  'data','value','key','name','note','point','item','step','way','time','part',
+  'case','show','find','know','think','say','see','go','look','try','work',
+  'available','current','latest','best','right','used','made','first','last',
+  'next','each','between','under','through','during','without','against','different',
 ]);
 
 function readState() {
@@ -90,16 +98,11 @@ catch { process.exit(0); }
 const prompt = (hookInput.prompt || '').trim();
 if (!prompt) process.exit(0);
 
-// Toggle: /airblander in the prompt flips enforcement without needing a Bash tool call
+// Toggle: /airblander in the prompt flips enforcement — delegate to toggle.js to avoid duplication
 if (/^\/airblander\s*$/i.test(prompt)) {
-  const state = readState();
-  state.enabled = state.enabled === false ? true : false;
-  writeState(state);
-  process.stdout.write(
-    state.enabled
-      ? 'airblander: ON — enforcement active. Writes to SDK files will be blocked until docs are fetched.'
-      : 'airblander: OFF — enforcement paused for this session. All writes allowed.\nRun /airblander again to re-enable.'
-  );
+  const { spawnSync } = require('child_process');
+  const r = spawnSync(process.execPath, [path.join(PLUGIN_ROOT, 'hooks', 'toggle.js')], { encoding: 'utf8' });
+  process.stdout.write(r.stdout || '');
   process.exit(0);
 }
 

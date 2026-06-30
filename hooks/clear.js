@@ -49,7 +49,7 @@ if (tool_name === 'WebFetch') {
 if (!target) process.exit(0);
 
 const state = readState();
-let updated = false;
+const newlyCleared = [];
 
 // v1: check static watchlist docsDomains
 for (const sdk of watchlist.sdks) {
@@ -57,7 +57,7 @@ for (const sdk of watchlist.sdks) {
   if (sdk.docsDomains.some(d => new RegExp(d, 'i').test(target))) {
     if (!state.cleared) state.cleared = {};
     state.cleared[sdk.name] = Date.now();
-    updated = true;
+    newlyCleared.push(sdk.name);
   }
 }
 
@@ -69,9 +69,12 @@ for (const dSdk of dynamicSDKs) {
   if (new RegExp(dSdk.domainHint, 'i').test(target)) {
     if (!state.cleared) state.cleared = {};
     state.cleared[dSdk.name] = Date.now();
-    updated = true;
+    newlyCleared.push(dSdk.displayName || dSdk.name);
   }
 }
 
-if (updated) writeState(state);
+if (newlyCleared.length > 0) {
+  writeState(state);
+  process.stdout.write(`airblander: ✓ ${newlyCleared.join(', ')} cleared — writes unblocked`);
+}
 process.exit(0);
