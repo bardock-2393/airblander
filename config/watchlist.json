@@ -20,7 +20,19 @@
         "\\/twilio\\/",
         "twilio"
       ],
-      "context7Query": "twilio"
+      "context7Query": "twilio",
+      "deprecated": [
+        {
+          "pattern": "Twilio\\.RestClient\\(",
+          "replacement": "twilio(accountSid, authToken)",
+          "reason": "RestClient removed in twilio-node v4, use the default export function"
+        },
+        {
+          "pattern": "client\\.messages\\.create\\([^)]*from:",
+          "replacement": "messagingServiceSid or use E.164 from number",
+          "reason": "Hardcoded 'from' without E.164 format deprecated; prefer MessagingService SID"
+        }
+      ]
     },
     {
       "name": "pipecat",
@@ -41,7 +53,8 @@
         "\\/pipecat\\/",
         "pipecat"
       ],
-      "context7Query": "pipecat"
+      "context7Query": "pipecat",
+      "deprecated": []
     },
     {
       "name": "livekit",
@@ -63,7 +76,14 @@
         "\\/livekit\\/",
         "livekit"
       ],
-      "context7Query": "livekit"
+      "context7Query": "livekit",
+      "deprecated": [
+        {
+          "pattern": "RoomServiceClient\\(",
+          "replacement": "RoomServiceClient from @livekit/protocol or livekit-server-sdk",
+          "reason": "Direct RoomServiceClient instantiation API changed in livekit-server-sdk v2"
+        }
+      ]
     },
     {
       "name": "google-genai",
@@ -94,7 +114,29 @@
         "google.*generativeai",
         "generativeai"
       ],
-      "context7Query": "google generative-ai"
+      "context7Query": "google generative-ai",
+      "deprecated": [
+        {
+          "pattern": "chat-bison",
+          "replacement": "gemini-2.0-flash",
+          "reason": "PaLM 2 chat-bison model retired, migrate to Gemini"
+        },
+        {
+          "pattern": "text-bison",
+          "replacement": "gemini-2.0-flash",
+          "reason": "PaLM 2 text-bison model retired, migrate to Gemini"
+        },
+        {
+          "pattern": "gemini-pro(?!-vision|-1\\.5|-2)",
+          "replacement": "gemini-2.0-flash or gemini-1.5-pro",
+          "reason": "gemini-pro (1.0) deprecated, use a versioned model ID"
+        },
+        {
+          "pattern": "\\.generateText\\(",
+          "replacement": "model.generateContent()",
+          "reason": "generateText removed from @google/generative-ai v0.2+"
+        }
+      ]
     },
     {
       "name": "aws-bedrock",
@@ -123,7 +165,29 @@
         "\\/bedrock\\/",
         "bedrock"
       ],
-      "context7Query": "aws-sdk-js-v3 bedrock"
+      "context7Query": "aws-sdk-js-v3 bedrock",
+      "deprecated": [
+        {
+          "pattern": "anthropic\\.claude-v2",
+          "replacement": "anthropic.claude-sonnet-4-5-v1:0 or newer",
+          "reason": "claude-v2 model ID retired on AWS Bedrock"
+        },
+        {
+          "pattern": "anthropic\\.claude-instant",
+          "replacement": "anthropic.claude-haiku-4-5-v1:0",
+          "reason": "claude-instant models retired on AWS Bedrock"
+        },
+        {
+          "pattern": "amazon\\.titan-text-express",
+          "replacement": "Check AWS docs — Titan models have varied retirement dates",
+          "reason": "Amazon Titan text models being phased out"
+        },
+        {
+          "pattern": "invoke_model\\(",
+          "replacement": "converse() or invoke_model() with current model IDs",
+          "reason": "InvokeModel still works but Converse API is the preferred interface for chat models"
+        }
+      ]
     },
     {
       "name": "anthropic",
@@ -153,7 +217,44 @@
         "\\/anthropic\\/",
         "anthropic"
       ],
-      "context7Query": "anthropic"
+      "context7Query": "anthropic",
+      "deprecated": [
+        {
+          "pattern": "\\.completions\\.create\\(",
+          "replacement": "client.messages.create()",
+          "reason": "Text Completions API deprecated; Messages API is the current standard"
+        },
+        {
+          "pattern": "claude-instant-",
+          "replacement": "claude-haiku-4-5",
+          "reason": "claude-instant models retired Jan 2025"
+        },
+        {
+          "pattern": "\"claude-2",
+          "replacement": "claude-sonnet-4-6 or claude-opus-4-8",
+          "reason": "claude-2 family retired"
+        },
+        {
+          "pattern": "'claude-2",
+          "replacement": "claude-sonnet-4-6 or claude-opus-4-8",
+          "reason": "claude-2 family retired"
+        },
+        {
+          "pattern": "claude-v1",
+          "replacement": "current claude-* model ID",
+          "reason": "claude-v1 model family removed"
+        },
+        {
+          "pattern": "claude-3-opus-20240229",
+          "replacement": "claude-opus-4-8",
+          "reason": "Dated snapshot ID; use the latest Opus model ID"
+        },
+        {
+          "pattern": "claude-3-5-sonnet-20240620",
+          "replacement": "claude-sonnet-4-6",
+          "reason": "Dated snapshot ID; use the latest Sonnet model ID"
+        }
+      ]
     },
     {
       "name": "azure-communication",
@@ -178,7 +279,14 @@
         "azure.*communication",
         "communication-services"
       ],
-      "context7Query": "azure communication services"
+      "context7Query": "azure communication services",
+      "deprecated": [
+        {
+          "pattern": "@azure/communication-sms",
+          "replacement": "@azure/communication-messages for WhatsApp/advanced, or keep for basic SMS",
+          "reason": "@azure/communication-sms is stable but @azure/communication-messages is the modern path for multi-channel"
+        }
+      ]
     },
     {
       "name": "stripe",
@@ -198,7 +306,24 @@
         "\\/stripe\\/",
         "stripe"
       ],
-      "context7Query": "stripe"
+      "context7Query": "stripe",
+      "deprecated": [
+        {
+          "pattern": "stripe\\.charges\\.create",
+          "replacement": "stripe.paymentIntents.create",
+          "reason": "Charges API works but PaymentIntents is the modern standard; required for 3DS/SCA"
+        },
+        {
+          "pattern": "stripe\\.sources\\.create",
+          "replacement": "stripe.paymentMethods.create",
+          "reason": "Sources API deprecated in favour of PaymentMethods"
+        },
+        {
+          "pattern": "stripe\\.orders\\.create",
+          "replacement": "Use PaymentIntents + custom fulfillment logic",
+          "reason": "Orders API v1 retired"
+        }
+      ]
     },
     {
       "name": "openai",
@@ -218,7 +343,34 @@
         "\\/openai\\/",
         "openai"
       ],
-      "context7Query": "openai"
+      "context7Query": "openai",
+      "deprecated": [
+        {
+          "pattern": "openai\\.Completion\\.create",
+          "replacement": "client.completions.create()",
+          "reason": "Pre-v1.0 class-based API removed in openai-python v1.0"
+        },
+        {
+          "pattern": "openai\\.ChatCompletion\\.create",
+          "replacement": "client.chat.completions.create()",
+          "reason": "Pre-v1.0 class-based API removed in openai-python v1.0"
+        },
+        {
+          "pattern": "gpt-3\\.5-turbo-0301",
+          "replacement": "gpt-4o-mini",
+          "reason": "Dated snapshot model ID retired"
+        },
+        {
+          "pattern": "text-davinci-003",
+          "replacement": "gpt-4o or gpt-4o-mini",
+          "reason": "Legacy completion models retired Jan 2024"
+        },
+        {
+          "pattern": "openai\\.api_key\\s*=",
+          "replacement": "OpenAI(api_key=os.environ['OPENAI_API_KEY'])",
+          "reason": "Module-level api_key assignment removed in openai-python v1.0; pass via client constructor"
+        }
+      ]
     }
   ]
 }

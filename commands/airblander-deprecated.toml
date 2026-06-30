@@ -1,0 +1,46 @@
+description = "Scan the codebase for deprecated SDK API patterns — removed methods, old model names, pre-v1 client styles"
+prompt = """
+Scan the current working directory for deprecated SDK API patterns. One-shot report, change nothing.
+
+Check for these patterns across all source files (*.ts, *.tsx, *.js, *.jsx, *.py, *.mjs):
+
+ANTHROPIC:
+- client.completions.create (old Text Completions API) → client.messages.create
+- "claude-instant-" model strings → claude-haiku-4-5
+- "claude-2" model strings → claude-sonnet-4-6 or claude-opus-4-8
+- "claude-v1" model strings → current claude-* model
+
+OPENAI:
+- openai.Completion.create (pre-v1 style) → client.completions.create
+- openai.ChatCompletion.create (pre-v1 style) → client.chat.completions.create
+- "gpt-3.5-turbo-0301" model strings → gpt-4o-mini
+
+GOOGLE GENAI:
+- "chat-bison" or "text-bison" model strings → gemini-2.0-flash
+- generateText( from old @google-ai/generativelanguage → @google/generative-ai
+
+STRIPE:
+- stripe.charges.create (pre-PaymentIntents) → stripe.paymentIntents.create
+- stripe.subscriptions.create without payment_behavior field → add payment_behavior: "default_incomplete"
+
+AWS BEDROCK:
+- "anthropic.claude-v2" model ID → anthropic.claude-sonnet-4-5-v1 or newer
+- "amazon.titan-" model IDs — check AWS docs, many retired
+
+TWILIO:
+- Twilio.RestClient( (old v2 client) → twilio(accountSid, authToken)
+
+Also check the `deprecated` field in ${CLAUDE_PLUGIN_ROOT}/config/watchlist.json for any SDK-specific patterns.
+
+Output format:
+## Deprecated API Report
+
+### <sdk-name>
+  <file>:<line>  <deprecated pattern>
+    → Replace with: <replacement>
+    → Reason: <why it's deprecated>
+
+net: N deprecated patterns found across N files.
+
+If nothing found: "No deprecated SDK patterns detected. Good shape."
+"""
