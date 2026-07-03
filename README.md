@@ -1,148 +1,170 @@
 <p align="center">
-  <img src="logo.png" alt="Airblander Logo" width="350">
+  <img src="logo.png" alt="Airblander Logo" width="320">
 </p>
 
 <h1 align="center">Airblander</h1>
 <p align="center">
-  <em>It won't let you write SDK code until you've read the docs.</em>
+  <strong>Stop Claude Code from writing outdated SDK code.</strong><br>
+  <em>Physical docs-reading enforcement for AI coding agents.</em>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/github/stars/bardock-2393/airblander?style=flat-square&color=111111&label=stars" alt="Stars">
-  <img src="https://img.shields.io/github/v/release/bardock-2393/airblander?style=flat-square&color=111111&label=release" alt="Release">
-  <img src="https://img.shields.io/badge/works%20with-Claude%20Code-111111?style=flat-square" alt="Works with Claude Code">
-  <img src="https://img.shields.io/badge/license-MIT-111111?style=flat-square" alt="MIT license">
+  <a href="https://github.com/bardock-2393/airblander/stargazers"><img src="https://img.shields.io/github/stars/bardock-2393/airblander?style=flat-square&color=2563eb&label=stars" alt="Stars"></a>
+  <a href="https://github.com/bardock-2393/airblander/releases"><img src="https://img.shields.io/github/v/release/bardock-2393/airblander?style=flat-square&color=10b981&label=release" alt="Release"></a>
+  <img src="https://img.shields.io/badge/works%20with-Claude%20Code-8b5cf6?style=flat-square" alt="Works with Claude Code">
+  <img src="https://img.shields.io/badge/overhead-%3C100ms-0ea5e9?style=flat-square" alt="Zero Overhead">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-64748b?style=flat-square" alt="MIT license"></a>
 </p>
 
 ---
 
-You've been there. You ask an AI agent to add Stripe. It writes two hundred lines against the v2 Charges API — confidently, quickly, correctly according to its training data from eighteen months ago. You ship it. Everything works until it doesn't.
+### The Problem
+You ask an AI agent: *"Add Twilio SMS to this endpoint"* or *"Set up Stripe payments"*.
 
-Airblander is a Claude Code plugin that blocks the agent from writing SDK code until it has actually fetched the current docs this session. Not docs from yesterday. Not docs it vaguely remembers. Docs it fetched ten seconds ago.
+The agent starts writing immediately—using a deprecated method removed two years ago, or an API signature it hallucinated from its training cutoff. Everything looks right, but it breaks in production.
 
-## What it looks like
+### The Solution: Airblander
+**Airblander** is a lightweight Claude Code plugin that intercepts file writes. If your code imports a service SDK (Stripe, Twilio, Anthropic, Bedrock, etc.), Airblander **blocks the write** until Claude actually fetches and reads the current docs in that session.
 
-You say: "add Twilio SMS to this endpoint."
+> **One extra step → 100% up-to-date, non-hallucinated SDK code.**
 
-Without airblander, the agent starts writing immediately. Maybe it gets `RestClient` (removed in v4). Maybe it doesn't. Depends on the day.
+---
 
-With airblander:
+## ⚡ What it looks like in action
 
-```
-airblander: BLOCKED -- docs not yet fetched for: twilio
+When Claude tries writing code for a protected SDK before reading its docs:
+
+```text
+airblander: BLOCKED 🛑 -- docs not yet fetched for: twilio
 
 Fetch current docs before writing SDK code:
   - twilio: fetch https://www.twilio.com/docs
     or use Context7 query: "twilio"
 
-After fetching, re-attempt the write.
+After fetching live docs, re-attempt the write.
 ```
 
-The agent fetches the docs, finds out what's current, and then writes the file. One extra step, consistently correct code.
+The agent is forced to fetch the current documentation, update its context, and then rewrite the file with accurate code.
 
-## Per-project, built from your dependencies
+---
 
-Airblander doesn't ship a fixed list of SDKs to gate. You point it at a project and it builds the watchlist from what that project actually depends on:
+## 🔄 How It Works
 
-```
-/airblander-scan
--> airblander: watchlist built for this project (3): aws-bedrock, anthropic, stripe
-   -> .airblander/watchlist.json -- writes importing these are gated until docs are fetched.
-```
-
-`scan` reads your `package.json`, `requirements.txt`, and `go.mod`, keeps only the dependencies that are recognized service SDKs (it ignores `react`, `lodash`, and friends), and writes `.airblander/watchlist.json`. Re-run it whenever you add a dependency.
-
-**No scan, no gating.** A project you haven't scanned is left completely alone.
-
-## How it works
-
-```
-You run: /airblander-scan
-        |
-  scan.js  ->  reads manifests, writes .airblander/watchlist.json
-        |
-  Agent tries to write payment.ts  (import stripe ...)
-        |
-  detect.js   ->  stripe in watchlist & not cleared  ->  BLOCKED (exit 2)
-        |
-  Agent fetches stripe.com/docs
-        |
-  clear.js    ->  stripe marked cleared
-        |
-  Agent writes the file  ->  allowed
+```text
+ 1. You run: /airblander-scan
+            │
+            ▼
+    [scan.js] ➔ Scans package.json / requirements.txt / go.mod
+            │   Writes .airblander/watchlist.json
+            ▼
+ 2. Agent attempts write to payment.ts (import stripe ...)
+            │
+            ▼
+    [detect.js] ➔ Is Stripe in watchlist & uncaught?
+            │
+            ├── YES ➔ BLOCKED (exit 2)
+            │
+ 3. Agent fetches stripe.com/docs
+            │
+            ▼
+    [clear.js] ➔ Marks Stripe as CLEARED for this session
+            │
+ 4. Agent retries write ➔ ALLOWED ✅
 ```
 
-State is **per session** (`airblander-state-<session_id>.json`) and resets every session. Two projects open at once don't interfere, and docs fetched yesterday don't count — the library may have changed overnight.
+- **Per-Session State**: State resets every session (`airblander-state-<session_id>.json`). Documentation fetched last month doesn't count—APIs move fast.
+- **Zero Configuration**: `scan` automatically filters standard utility packages (`lodash`, `react`) and gates only recognized cloud & service SDKs.
 
-`/airblander` pauses enforcement for the session if you need to work fast. Run it again to re-enable.
+---
 
-## Install
+## 🚀 Quickstart
 
+### 1. Install Plugin
 ```bash
 claude plugin marketplace add bardock-2393/airblander
 claude plugin install airblander@airblander
 ```
 
-Then, in any project you want gated:
-
-```
+### 2. Enable in your project
+In any repository you want protected, run:
+```text
 /airblander-scan
 ```
+That's it! `.airblander/watchlist.json` is created and enforcement begins immediately.
 
-## Commands
+---
 
-| Command | What it does |
+## 🛠️ Commands Reference
+
+| Command | Action |
 |---|---|
-| `/airblander-scan` | Scan this project's dependencies and build its SDK watchlist |
-| `/airblander` | Toggle enforcement on/off for this session |
-| `/airblander-status` | Show which SDKs are cleared vs. blocked this session |
-| `/airblander-help` | Quick reference |
+| `/airblander-scan` | Scans project dependencies and builds the SDK watchlist |
+| `/airblander` | Toggles enforcement ON / OFF for the current session |
+| `/airblander-status` | Displays blocked vs. cleared SDKs for this session |
+| `/airblander-help` | Quick reference and usage instructions |
 
-## Recognized SDKs
+---
 
-`scan` only adds a dependency to your watchlist if it's one of these recognized service SDKs:
+## 📦 Supported SDKs
 
-| SDK | Detected from packages like |
+Airblander automatically detects and guards recognized service SDKs across Node, Python, and Go:
+
+| SDK | Detected Package Manifests |
 |---|---|
-| **anthropic** | `anthropic`, `@anthropic-ai/sdk` |
-| **openai** | `openai` |
-| **stripe** | `stripe` |
-| **twilio** | `twilio` |
-| **google-genai** | `@google/generative-ai`, `google-generativeai` |
-| **aws-bedrock** | `boto3`, `@aws-sdk/client-bedrock-runtime` |
-| **livekit** | `livekit`, `livekit-server-sdk`, `livekit-agents` |
-| **pipecat** | `pipecat-ai` |
-| **azure-communication** | `@azure/communication-sms`, `@azure/communication-messages` |
+| **Anthropic** | `anthropic`, `@anthropic-ai/sdk` |
+| **OpenAI** | `openai` |
+| **Stripe** | `stripe` |
+| **Twilio** | `twilio` |
+| **Google GenAI** | `@google/generative-ai`, `google-generativeai` |
+| **AWS Bedrock** | `boto3`, `@aws-sdk/client-bedrock-runtime` |
+| **LiveKit** | `livekit`, `livekit-server-sdk`, `livekit-agents` |
+| **Pipecat** | `pipecat-ai` |
+| **Azure Comms** | `@azure/communication-sms`, `@azure/communication-messages` |
 
-The mapping lives in `hooks/scan.js` (the `ALIASES` map) and the registry in `config/watchlist.json`. Add a new SDK by adding it to both.
+*Want to add an SDK? Submitting a PR takes 2 minutes! Add the mapping to `config/watchlist.json` and `ALIASES` in `hooks/scan.js`.*
 
-## Testing
+---
 
-Unit tests for the hooks, no API calls needed:
+## 🧪 Testing
+
+Run internal unit tests without network calls:
 
 ```bash
 node --test tests/detect.test.js tests/clear.test.js tests/resolve.test.js tests/isolation.test.js
 ```
 
-Covering: blocked/cleared/disabled states, Edit and MultiEdit tools, on-disk edit scanning, per-session isolation, toggle behavior, and malformed-input resilience.
+---
 
-## A few questions people ask
+## ❓ Frequently Asked Questions
 
-**Does it slow the agent down?**
-One Node process before each write, finishing in well under 100ms. Scanning is a one-time manual step.
+<details>
+<summary><strong>Does Airblander slow down Claude Code?</strong></summary>
+No. Airblander runs a lightweight Node hook in <100ms before file edits. It adds zero perceptible delay.
+</details>
 
-**What if I'm offline?**
-Toggle off with `/airblander`, work, toggle back. The toggle persists across that session.
+<details>
+<summary><strong>What if I'm working offline or in a rush?</strong></summary>
+You can pause enforcement at any time during a session by running <code>/airblander</code>. Run it again to re-enable.
+</details>
 
-**Why reset every session?**
-Because a fetch from last week is stale by now. Per-session is the only contract that actually means something.
+<details>
+<summary><strong>Why reset cleared SDKs every session?</strong></summary>
+Because AI agents rely on fresh session context. Ensuring docs are fetched in the active session guarantees the agent is working against accurate, recent specs.
+</details>
 
-**An SDK I use isn't getting gated.**
-It's probably not in the recognized list, or your project doesn't declare it in a manifest. Add it to `config/watchlist.json` + the `ALIASES` map in `hooks/scan.js`, then re-run `/airblander-scan`.
+---
 
-**Can I permanently clear an SDK?**
-No. Fetch the docs. It takes five seconds.
+## 🤝 Contributing
 
-## License
+Contributions, SDK alias additions, and feature suggestions are welcome!
 
-MIT. Read the docs first.
+1. Fork the repository
+2. Add your SDK alias to `config/watchlist.json` and `hooks/scan.js`
+3. Run tests: `node --test tests/*.test.js`
+4. Submit a Pull Request!
+
+---
+
+## 📄 License
+
+[MIT License](LICENSE) © [Deep Santoshwar](https://deepsantoshwar.com)
